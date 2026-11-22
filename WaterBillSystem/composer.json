@@ -1,0 +1,12 @@
+{
+    "name": "waterbill/system",
+    "description": "Water Bill Management System for local PH water service providers",
+    "type": "project",
+    "require": {
+        "php": ">=8.0",
+        "dompdf/dompdf": "^2.0"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
