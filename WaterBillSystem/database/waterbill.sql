@@ -74,14 +74,14 @@ CREATE TABLE bills (
   period_start       DATE NOT NULL,
   period_end         DATE NOT NULL,
   consumption        DECIMAL(10,2) NOT NULL,
-  basic_charge       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  consumption_charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  other_fees         DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  penalty            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  discount           DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  total_amount       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  amount_paid        DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  balance            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  basic_charge       DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  consumption_charge DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  other_fees         DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  penalty            DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  discount           DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  total_amount       DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  amount_paid        DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  balance            DECIMAL(14,2) NOT NULL DEFAULT 0.00,
   due_date           DATE NOT NULL,
   status             ENUM('unpaid','partial','paid','overdue') NOT NULL DEFAULT 'unpaid',
   remarks            VARCHAR(255) DEFAULT NULL,
@@ -100,7 +100,7 @@ CREATE TABLE payments (
   receipt_number VARCHAR(30) NOT NULL UNIQUE,
   bill_id        INT UNSIGNED NOT NULL,
   customer_id    INT UNSIGNED NOT NULL,
-  amount         DECIMAL(10,2) NOT NULL,
+  amount         DECIMAL(14,2) NOT NULL,
   payment_date   DATETIME NOT NULL,
   method         ENUM('cash','gcash','maya','bank_transfer','check') NOT NULL DEFAULT 'cash',
   reference_no   VARCHAR(60) DEFAULT NULL,
@@ -149,3 +149,24 @@ INSERT INTO water_rates
 ('Residential Standard', 'residential', 10.00, 200.00, 18.00, 2.00, 5, '2026-01-01', 1),
 ('Commercial Standard',  'commercial',  10.00, 350.00, 25.00, 2.00, 5, '2026-01-01', 1),
 ('Government Standard',  'government',  10.00, 300.00, 22.00, 2.00, 5, '2026-01-01', 1);
+
+-- ---------------------------------------------------------------------------
+-- Repair / migration helpers for an existing database that hit 99999999:
+-- 1. Widen monetary columns on existing tables:
+--    ALTER TABLE bills
+--      MODIFY basic_charge DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY consumption_charge DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY other_fees DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY penalty DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY discount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY total_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY amount_paid DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+--      MODIFY balance DECIMAL(14,2) NOT NULL DEFAULT 0.00;
+--    ALTER TABLE payments MODIFY amount DECIMAL(14,2) NOT NULL;
+-- 2. Inspect any corrupted 99999999 meter readings:
+--    SELECT * FROM meter_readings WHERE current_reading >= 99999999 OR consumption >= 99999999;
+-- 3. Delete an unbilled mistaken reading (or edit it via Meter Readings -> Edit/Delete):
+--    DELETE mr FROM meter_readings mr
+--    LEFT JOIN bills b ON b.reading_id = mr.id
+--    WHERE b.id IS NULL AND mr.consumption >= 99999999;
+-- ---------------------------------------------------------------------------

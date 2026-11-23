@@ -3,11 +3,23 @@ declare(strict_types=1);
 
 define('APP_NAME',    'Water Bill Management System');
 define('APP_VERSION', '1.0.0');
-define('BASE_URL',    '/WaterBillSystem');
+if (!defined('BASE_URL')) {
+    if (PHP_SAPI === 'cli') {
+        define('BASE_URL', '/WaterBillSystem');
+    } else {
+        $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+        $baseUrl = preg_replace('#/(pages|includes|cron)/[^/]+$#', '', $scriptName);
+        if ($baseUrl === $scriptName) {
+            $baseUrl = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+        }
+        define('BASE_URL', $baseUrl === '/' ? '' : $baseUrl);
+    }
+}
 define('APP_TIMEZONE','Asia/Manila');
 date_default_timezone_set(APP_TIMEZONE);
 
 define('DB_HOST',    '127.0.0.1');
+define('DB_PORT',    3308);
 define('DB_NAME',    'waterbill_db');
 define('DB_USER',    'root');
 define('DB_PASS',    '');
